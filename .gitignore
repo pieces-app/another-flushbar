@@ -7,3 +7,9 @@
 build/
 
 .idea/
+
+# Machine-local files
+**/android/local.properties
+
+# iOS ephemeral build artifacts
+**/ios/Flutter/ephemeral/
