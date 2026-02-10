@@ -6,6 +6,8 @@ homepage: https://github.com/cmdrootaccess/another-flushbar
 environment:
   sdk: '>=3.6.0 <4.0.0'
 
+resolution: workspace
+
 dependencies:
   flutter:
     sdk: flutter
