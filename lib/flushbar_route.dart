@@ -27,11 +27,11 @@ class FlushbarRoute<T> extends OverlayRoute<T> {
     super.settings,
   })  : _builder = Builder(builder: (BuildContext innerContext) => flushbar),
         _onStatusChanged = flushbar.onStatusChanged {
-    _configureAlignment(flushbar.flushbarPosition);
+    _configureAlignment();
     _configureSlideOffset();
   }
 
-  void _configureAlignment(FlushbarPosition flushbarPosition) {
+  void _configureAlignment() {
     // First, determine the end alignment based on position
     switch (flushbar.flushbarPosition) {
       case FlushbarPosition.TOP:
