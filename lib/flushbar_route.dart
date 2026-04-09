@@ -13,8 +13,11 @@ class FlushbarRoute<T> extends OverlayRoute<T> {
 
   Animation<double>? _filterBlurAnimation;
   Animation<Color?>? _filterColorAnimation;
+  Animation<Offset>? _slideAnimation;
   Alignment? _initialAlignment;
   Alignment? _endAlignment;
+  Offset? _initialSlideOffset;
+  Offset? _endSlideOffset;
   bool _wasDismissedBySwipe = false;
   Timer? _timer;
   T? _result;
@@ -22,47 +25,106 @@ class FlushbarRoute<T> extends OverlayRoute<T> {
 
   FlushbarRoute({
     required this.flushbar,
-    RouteSettings? settings,
+    super.settings,
   })  : _builder = Builder(builder: (BuildContext innerContext) => flushbar),
-        _onStatusChanged = flushbar.onStatusChanged,
-        super(settings: settings) {
+        _onStatusChanged = flushbar.onStatusChanged {
     _configureAlignment(flushbar.flushbarPosition);
+    _configureSlideOffset();
   }
 
   void _configureAlignment(FlushbarPosition flushbarPosition) {
+    // First, determine the end alignment based on position
     switch (flushbar.flushbarPosition) {
       case FlushbarPosition.TOP:
-        {
-          _initialAlignment = const Alignment(-1.0, -2.0);
-          _endAlignment = flushbar.endOffset != null
-              ? const Alignment(-1.0, -1.0) + Alignment(flushbar.endOffset!.dx, flushbar.endOffset!.dy)
-              : const Alignment(-1.0, -1.0);
-          break;
-        }
+        _endAlignment = flushbar.endOffset != null
+            ? const Alignment(-1.0, -1.0) + Alignment(flushbar.endOffset!.dx, flushbar.endOffset!.dy)
+            : const Alignment(-1.0, -1.0);
+        break;
       case FlushbarPosition.BOTTOM:
-        {
-          _initialAlignment = const Alignment(-1.0, 2.0);
-          _endAlignment = flushbar.endOffset != null
-              ? const Alignment(-1.0, 1.0) + Alignment(flushbar.endOffset!.dx, flushbar.endOffset!.dy)
-              : const Alignment(-1.0, 1.0);
-          break;
-        }
+        _endAlignment = flushbar.endOffset != null
+            ? const Alignment(-1.0, 1.0) + Alignment(flushbar.endOffset!.dx, flushbar.endOffset!.dy)
+            : const Alignment(-1.0, 1.0);
+        break;
       case FlushbarPosition.BOTTOM_RIGHT:
-        {
-          _initialAlignment = const Alignment(1.0, 2.0);
-          _endAlignment = flushbar.endOffset != null
-              ? const Alignment(-1.0, 1.0) + Alignment(flushbar.endOffset!.dx, flushbar.endOffset!.dy)
-              : const Alignment(1.0, 1.0);
-          break;
-        }
+        _endAlignment = flushbar.endOffset != null
+            ? const Alignment(1.0, 1.0) + Alignment(flushbar.endOffset!.dx, flushbar.endOffset!.dy)
+            : const Alignment(1.0, 1.0);
+        break;
       case FlushbarPosition.TOP_RIGHT:
-        {
-          _initialAlignment = const Alignment(1.0, -2.0);
-          _endAlignment = flushbar.endOffset != null
-              ? const Alignment(-1.0, 1.0) + Alignment(flushbar.endOffset!.dx, flushbar.endOffset!.dy)
-              : const Alignment(1.0, -1.0);
-          break;
+        _endAlignment = flushbar.endOffset != null
+            ? const Alignment(1.0, -1.0) + Alignment(flushbar.endOffset!.dx, flushbar.endOffset!.dy)
+            : const Alignment(1.0, -1.0);
+        break;
+    }
+
+    // Then, determine the initial alignment based on slide direction
+    switch (flushbar.slideDirection) {
+      case FlushbarSlideDirection.RIGHT_TO_LEFT:
+        // Start off-screen to the right, same Y as end position
+        _initialAlignment = Alignment(_endAlignment!.x + 2.0, _endAlignment!.y);
+        break;
+      case FlushbarSlideDirection.LEFT_TO_RIGHT:
+        // Start off-screen to the left, same Y as end position
+        _initialAlignment = Alignment(_endAlignment!.x - 2.0, _endAlignment!.y);
+        break;
+      case FlushbarSlideDirection.TOP_TO_BOTTOM:
+        // Start off-screen above, same X as end position
+        _initialAlignment = Alignment(_endAlignment!.x, _endAlignment!.y - 2.0);
+        break;
+      case FlushbarSlideDirection.BOTTOM_TO_TOP:
+        // Start off-screen below, same X as end position
+        _initialAlignment = Alignment(_endAlignment!.x, _endAlignment!.y + 2.0);
+        break;
+      case FlushbarSlideDirection.DEFAULT:
+        // Use default behavior based on position (vertical animation)
+        switch (flushbar.flushbarPosition) {
+          case FlushbarPosition.TOP:
+          case FlushbarPosition.TOP_RIGHT:
+            _initialAlignment = Alignment(_endAlignment!.x, -2.0);
+            break;
+          case FlushbarPosition.BOTTOM:
+          case FlushbarPosition.BOTTOM_RIGHT:
+            _initialAlignment = Alignment(_endAlignment!.x, 2.0);
+            break;
         }
+        break;
+    }
+  }
+
+  void _configureSlideOffset() {
+    // Configure slide animation offsets based on slideDirection
+    switch (flushbar.slideDirection) {
+      case FlushbarSlideDirection.RIGHT_TO_LEFT:
+        _initialSlideOffset = const Offset(1.0, 0.0);
+        _endSlideOffset = Offset.zero;
+        break;
+      case FlushbarSlideDirection.LEFT_TO_RIGHT:
+        _initialSlideOffset = const Offset(-1.0, 0.0);
+        _endSlideOffset = Offset.zero;
+        break;
+      case FlushbarSlideDirection.TOP_TO_BOTTOM:
+        _initialSlideOffset = const Offset(0.0, -1.0);
+        _endSlideOffset = Offset.zero;
+        break;
+      case FlushbarSlideDirection.BOTTOM_TO_TOP:
+        _initialSlideOffset = const Offset(0.0, 1.0);
+        _endSlideOffset = Offset.zero;
+        break;
+      case FlushbarSlideDirection.DEFAULT:
+        // Use default behavior based on position (vertical animation)
+        switch (flushbar.flushbarPosition) {
+          case FlushbarPosition.TOP:
+          case FlushbarPosition.TOP_RIGHT:
+            _initialSlideOffset = const Offset(0.0, -1.0);
+            _endSlideOffset = Offset.zero;
+            break;
+          case FlushbarPosition.BOTTOM:
+          case FlushbarPosition.BOTTOM_RIGHT:
+            _initialSlideOffset = const Offset(0.0, 1.0);
+            _endSlideOffset = Offset.zero;
+            break;
+        }
+        break;
     }
   }
 
@@ -111,9 +173,12 @@ class FlushbarRoute<T> extends OverlayRoute<T> {
               focused: false,
               container: true,
               explicitChildNodes: true,
-              child: AlignTransition(
-                alignment: _animation!,
-                child: child,
+              child: Align(
+                alignment: _endAlignment!,
+                child: SlideTransition(
+                  position: _slideAnimation!,
+                  child: child,
+                ),
               ),
             );
             return annotatedChild;
@@ -266,6 +331,19 @@ class FlushbarRoute<T> extends OverlayRoute<T> {
     );
   }
 
+  /// Creates the slide animation for translating the flushbar position.
+  Animation<Offset> createSlideAnimation() {
+    assert(!_transitionCompleter.isCompleted, 'Cannot reuse a $runtimeType after disposing it.');
+    assert(_controller != null);
+    return Tween<Offset>(begin: _initialSlideOffset, end: _endSlideOffset).animate(
+      CurvedAnimation(
+        parent: _controller!,
+        curve: flushbar.forwardAnimationCurve,
+        reverseCurve: flushbar.reverseAnimationCurve,
+      ),
+    );
+  }
+
   Animation<double>? createBlurFilterAnimation() {
     if (flushbar.routeBlur == null) return null;
 
@@ -301,17 +379,17 @@ class FlushbarRoute<T> extends OverlayRoute<T> {
     switch (status) {
       case AnimationStatus.completed:
         currentStatus = FlushbarStatus.SHOWING;
-        if (_onStatusChanged != null) _onStatusChanged!(currentStatus);
+        if (_onStatusChanged != null) _onStatusChanged(currentStatus);
         if (overlayEntries.isNotEmpty) overlayEntries.first.opaque = opaque;
 
         break;
       case AnimationStatus.forward:
         currentStatus = FlushbarStatus.IS_APPEARING;
-        if (_onStatusChanged != null) _onStatusChanged!(currentStatus);
+        if (_onStatusChanged != null) _onStatusChanged(currentStatus);
         break;
       case AnimationStatus.reverse:
         currentStatus = FlushbarStatus.IS_HIDING;
-        if (_onStatusChanged != null) _onStatusChanged!(currentStatus);
+        if (_onStatusChanged != null) _onStatusChanged(currentStatus);
         if (overlayEntries.isNotEmpty) overlayEntries.first.opaque = false;
         break;
       case AnimationStatus.dismissed:
@@ -321,7 +399,7 @@ class FlushbarRoute<T> extends OverlayRoute<T> {
         // back gesture drives this animation to the dismissed status before
         // popping the navigator.
         currentStatus = FlushbarStatus.DISMISSED;
-        if (_onStatusChanged != null) _onStatusChanged!(currentStatus);
+        if (_onStatusChanged != null) _onStatusChanged(currentStatus);
 
         if (!isCurrent) {
           navigator!.finalizeRoute(this);
@@ -343,6 +421,7 @@ class FlushbarRoute<T> extends OverlayRoute<T> {
     _filterBlurAnimation = createBlurFilterAnimation();
     _filterColorAnimation = createColorFilterAnimation();
     _animation = createAnimation();
+    _slideAnimation = createSlideAnimation();
     assert(_animation != null, '$runtimeType.createAnimation() returned null.');
     super.install();
   }
