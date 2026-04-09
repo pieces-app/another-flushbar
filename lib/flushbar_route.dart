@@ -13,8 +13,7 @@ class FlushbarRoute<T> extends OverlayRoute<T> {
 
   Animation<double>? _filterBlurAnimation;
   Animation<Color?>? _filterColorAnimation;
-  Animation<Offset>? _slideAnimation;
-  Alignment? _initialAlignment;
+  Animation<Offset>? _animation;
   Alignment? _endAlignment;
   Offset? _initialSlideOffset;
   Offset? _endSlideOffset;
@@ -54,39 +53,6 @@ class FlushbarRoute<T> extends OverlayRoute<T> {
         _endAlignment = flushbar.endOffset != null
             ? const Alignment(1.0, -1.0) + Alignment(flushbar.endOffset!.dx, flushbar.endOffset!.dy)
             : const Alignment(1.0, -1.0);
-        break;
-    }
-
-    // Then, determine the initial alignment based on slide direction
-    switch (flushbar.slideDirection) {
-      case FlushbarSlideDirection.RIGHT_TO_LEFT:
-        // Start off-screen to the right, same Y as end position
-        _initialAlignment = Alignment(_endAlignment!.x + 2.0, _endAlignment!.y);
-        break;
-      case FlushbarSlideDirection.LEFT_TO_RIGHT:
-        // Start off-screen to the left, same Y as end position
-        _initialAlignment = Alignment(_endAlignment!.x - 2.0, _endAlignment!.y);
-        break;
-      case FlushbarSlideDirection.TOP_TO_BOTTOM:
-        // Start off-screen above, same X as end position
-        _initialAlignment = Alignment(_endAlignment!.x, _endAlignment!.y - 2.0);
-        break;
-      case FlushbarSlideDirection.BOTTOM_TO_TOP:
-        // Start off-screen below, same X as end position
-        _initialAlignment = Alignment(_endAlignment!.x, _endAlignment!.y + 2.0);
-        break;
-      case FlushbarSlideDirection.DEFAULT:
-        // Use default behavior based on position (vertical animation)
-        switch (flushbar.flushbarPosition) {
-          case FlushbarPosition.TOP:
-          case FlushbarPosition.TOP_RIGHT:
-            _initialAlignment = Alignment(_endAlignment!.x, -2.0);
-            break;
-          case FlushbarPosition.BOTTOM:
-          case FlushbarPosition.BOTTOM_RIGHT:
-            _initialAlignment = Alignment(_endAlignment!.x, 2.0);
-            break;
-        }
         break;
     }
   }
@@ -176,7 +142,7 @@ class FlushbarRoute<T> extends OverlayRoute<T> {
               child: Align(
                 alignment: _endAlignment!,
                 child: SlideTransition(
-                  position: _slideAnimation!,
+                  position: _animation!,
                   child: child,
                 ),
               ),
@@ -293,8 +259,7 @@ class FlushbarRoute<T> extends OverlayRoute<T> {
 
   /// The animation that drives the route's transition and the previous route's
   /// forward transition.
-  Animation<Alignment>? get animation => _animation;
-  Animation<Alignment>? _animation;
+  Animation<Offset>? get animation => _animation;
 
   /// The animation controller that the route uses to drive the transitions.
   ///
@@ -316,23 +281,8 @@ class FlushbarRoute<T> extends OverlayRoute<T> {
     );
   }
 
-  /// Called to create the animation that exposes the current progress of
-  /// the transition controlled by the animation controller created by
-  /// [createAnimationController()].
-  Animation<Alignment> createAnimation() {
-    assert(!_transitionCompleter.isCompleted, 'Cannot reuse a $runtimeType after disposing it.');
-    assert(_controller != null);
-    return AlignmentTween(begin: _initialAlignment, end: _endAlignment).animate(
-      CurvedAnimation(
-        parent: _controller!,
-        curve: flushbar.forwardAnimationCurve,
-        reverseCurve: flushbar.reverseAnimationCurve,
-      ),
-    );
-  }
-
   /// Creates the slide animation for translating the flushbar position.
-  Animation<Offset> createSlideAnimation() {
+  Animation<Offset> createAnimation() {
     assert(!_transitionCompleter.isCompleted, 'Cannot reuse a $runtimeType after disposing it.');
     assert(_controller != null);
     return Tween<Offset>(begin: _initialSlideOffset, end: _endSlideOffset).animate(
@@ -421,7 +371,6 @@ class FlushbarRoute<T> extends OverlayRoute<T> {
     _filterBlurAnimation = createBlurFilterAnimation();
     _filterColorAnimation = createColorFilterAnimation();
     _animation = createAnimation();
-    _slideAnimation = createSlideAnimation();
     assert(_animation != null, '$runtimeType.createAnimation() returned null.');
     super.install();
   }
