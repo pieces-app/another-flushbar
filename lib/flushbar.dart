@@ -16,7 +16,7 @@ typedef OnTap = void Function(Flushbar flushbar);
 // ignore: must_be_immutable
 class Flushbar<T> extends StatefulWidget {
   Flushbar(
-      {Key? key,
+      {super.key,
       this.title,
       this.safeArea = true,
       this.titleColor,
@@ -61,11 +61,11 @@ class Flushbar<T> extends StatefulWidget {
       this.routeColor,
       this.userInputForm,
       this.endOffset,
+      this.slideDirection = FlushbarSlideDirection.DEFAULT,
       this.flushbarRoute // Please dont init this
       })
       // ignore: prefer_initializing_formals
-      : onStatusChanged = onStatusChanged,
-        super(key: key) {
+      : onStatusChanged = onStatusChanged {
     onStatusChanged = onStatusChanged ?? (status) {};
   }
 
@@ -221,6 +221,10 @@ class Flushbar<T> extends StatefulWidget {
   /// Offset to be added to the end Flushbar position.
   /// Intended to replace [margin] when you need items below Flushbar to be accessible
   final Offset? endOffset;
+
+  /// The direction from which the flushbar slides in.
+  /// Defaults to [FlushbarSlideDirection.DEFAULT] which uses vertical animation based on position.
+  final FlushbarSlideDirection slideDirection;
 
   /// Choose if the flushbar must be displayed inside a safeArea
   /// For custom safeArea you can use margin instead
@@ -391,14 +395,11 @@ class _FlushbarState<K extends Object?> extends State<Flushbar<K>> with TickerPr
   //TODO : review EdgeInsets
   @override
   Widget build(BuildContext context) {
-    return Align(
-      heightFactor: 1.0,
-      child: Material(
-        color: widget.flushbarStyle == FlushbarStyle.FLOATING ? Colors.transparent : widget.backgroundColor,
-        child: GestureDetector(
-          onTap: () => widget.onTap?.call(widget),
-          child: _getFlushbar(),
-        ),
+    return Material(
+      color: widget.flushbarStyle == FlushbarStyle.FLOATING ? Colors.transparent : widget.backgroundColor,
+      child: GestureDetector(
+        onTap: () => widget.onTap?.call(widget),
+        child: _getFlushbar(),
       ),
     );
   }
@@ -756,6 +757,14 @@ enum FlushbarStyle { FLOATING, GROUNDED }
 /// If vertical, dismiss up will be allowed if [FlushbarPosition.TOP]
 /// If vertical, dismiss down will be allowed if [FlushbarPosition.BOTTOM]
 enum FlushbarDismissDirection { HORIZONTAL, VERTICAL }
+
+/// Indicates the direction from which the flushbar slides in
+/// [FlushbarSlideDirection.DEFAULT] uses the default animation based on position (vertical)
+/// [FlushbarSlideDirection.LEFT_TO_RIGHT] slides in from left to right
+/// [FlushbarSlideDirection.RIGHT_TO_LEFT] slides in from right to left
+/// [FlushbarSlideDirection.TOP_TO_BOTTOM] slides in from top to bottom
+/// [FlushbarSlideDirection.BOTTOM_TO_TOP] slides in from bottom to top
+enum FlushbarSlideDirection { DEFAULT, LEFT_TO_RIGHT, RIGHT_TO_LEFT, TOP_TO_BOTTOM, BOTTOM_TO_TOP }
 
 /// Indicates the animation status
 /// [FlushbarStatus.SHOWING] Flushbar has stopped and the user can see it
